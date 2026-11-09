@@ -14,7 +14,7 @@ import { studioMixer } from "@/engine/audio/mixer";
 import { useEditorStore } from "@/store/useEditorStore";
 import AudioEffectsModal from "./AudioEffectsModal";
 
-export default function AudioMixerPanel({ onClose }) {
+export default function AudioMixerPanel({ isOpen = true, onClose, onOpenEffects }) {
   const layers = useEditorStore((s) => s.layers);
   const updateLayer = useEditorStore((s) => s.updateLayer);
 
@@ -86,6 +86,8 @@ export default function AudioMixerPanel({ onClose }) {
     updateLayer(trackId, { isSolo: next });
     studioMixer.updateChannel(trackId, { isSolo: next });
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md select-none animate-fade-in">
@@ -224,10 +226,16 @@ export default function AudioMixerPanel({ onClose }) {
                     </button>
 
                     <button
-                      onClick={() => setActiveEffectsTrackId(track.id)}
-                      className="col-span-2 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-200 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition-all min-h-[36px]"
+                      onClick={() => {
+                        if (onOpenEffects) {
+                          onOpenEffects(track.id);
+                        } else {
+                          setActiveEffectsTrackId(track.id);
+                        }
+                      }}
+                      className="col-span-2 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-surface-200 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition-all min-h-[44px]"
                     >
-                      <Sparkles className="w-3 h-3 text-purple-400" />
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
                       <span>FX Rack</span>
                     </button>
                   </div>
