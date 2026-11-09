@@ -10,14 +10,16 @@ import AssetsView from "@/components/dashboard/AssetsView";
 import SettingsView from "@/components/dashboard/SettingsView";
 import NewProjectModal from "@/components/dashboard/NewProjectModal";
 import TemplatePreviewModal from "@/components/dashboard/TemplatePreviewModal";
+import PromptToMotionModal from "@/components/ai/PromptToMotionModal";
 import Toast from "@/components/ui/Toast";
 import CrashRecoveryBanner from "@/components/projects/CrashRecoveryBanner";
 import { useProjectStore } from "@/store/useProjectStore";
-import { Sparkles, Plus, Play, ArrowRight, Layers, Gauge, Cpu } from "lucide-react";
+import { Sparkles, Plus, Play, ArrowRight, Layers, Gauge, Cpu, Wand2 } from "lucide-react";
 import StudioEditor from "@/components/editor";
 
 export default function DashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const {
     activeTab,
     setActiveTab,
@@ -48,6 +50,7 @@ export default function DashboardPage() {
       <Sidebar
         mobileOpen={mobileMenuOpen}
         setMobileOpen={setMobileMenuOpen}
+        onOpenAiModal={() => setIsAiModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -80,8 +83,16 @@ export default function DashboardPage() {
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
                     <button
+                      onClick={() => setIsAiModalOpen(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 hover:from-purple-500 hover:via-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-glow transition-all duration-150 hover:scale-105 active:scale-95 min-h-[44px]"
+                    >
+                      <Sparkles className="w-4 h-4 animate-pulse" />
+                      <span>Generate with AI</span>
+                    </button>
+
+                    <button
                       onClick={() => openNewProjectModal()}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-glow transition-all duration-150 hover:scale-105 active:scale-95"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-50 hover:bg-surface-border text-zinc-200 border border-surface-border text-xs font-semibold transition-all min-h-[44px]"
                     >
                       <Plus className="w-4 h-4" />
                       <span>New Project</span>
@@ -89,9 +100,9 @@ export default function DashboardPage() {
 
                     <button
                       onClick={() => setActiveTab("templates")}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-50 hover:bg-surface-border text-zinc-200 border border-surface-border text-xs font-medium transition-all"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-50 hover:bg-surface-border text-zinc-300 border border-surface-border text-xs font-medium transition-all min-h-[44px]"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                      <Wand2 className="w-3.5 h-3.5 text-purple-400" />
                       <span>Explore Templates</span>
                     </button>
                   </div>
@@ -133,6 +144,10 @@ export default function DashboardPage() {
       {/* Global Interactive Modals */}
       <NewProjectModal />
       <TemplatePreviewModal />
+      <PromptToMotionModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+      />
 
       {/* Action Toast Notifications */}
       <Toast />

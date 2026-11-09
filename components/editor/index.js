@@ -28,6 +28,7 @@ import ProjectDiagnosticsModal from "@/components/advanced/ProjectDiagnosticsMod
 import ShortcutsHelpModal from "@/components/advanced/ShortcutsHelpModal";
 import MobileTouchToolbar from "@/components/advanced/MobileTouchToolbar";
 import CodeExportModal from "@/components/codeExport/CodeExportModal";
+import PromptToMotionModal from "@/components/ai/PromptToMotionModal";
 
 import { useEditorStore } from "@/store/useEditorStore";
 import { useAnimationStore } from "@/store/useAnimationStore";
@@ -63,6 +64,7 @@ export default function StudioEditor({ project, onBackToDashboard }) {
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isCodeExportOpen, setIsCodeExportOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -91,6 +93,7 @@ export default function StudioEditor({ project, onBackToDashboard }) {
         onToggleRightSidebar={() => setMobileRightOpen(!mobileRightOpen)}
         isLeftOpen={mobileLeftOpen}
         isRightOpen={mobileRightOpen}
+        onOpenAiModal={() => setIsAiModalOpen(true)}
         onOpenEffectsLibrary={() => setIsEffectsModalOpen(true)}
         onOpenPresets={() => setIsPresetsModalOpen(true)}
         onOpenAssetVault={() => {
@@ -291,6 +294,12 @@ export default function StudioEditor({ project, onBackToDashboard }) {
       <CodeExportModal
         isOpen={isCodeExportOpen}
         onClose={() => setIsCodeExportOpen(false)}
+      />
+
+      {/* Gemini AI Prompt-to-Motion Modal */}
+      <PromptToMotionModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
       />
     </div>
   );

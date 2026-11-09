@@ -21,7 +21,11 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export default function Sidebar({ mobileOpen = false, setMobileOpen = () => {} }) {
+export default function Sidebar({
+  mobileOpen = false,
+  setMobileOpen = () => {},
+  onOpenAiModal = () => {},
+}) {
   const { activeTab, setActiveTab, openNewProjectModal, projects } = useProjectStore();
 
   const handleNavClick = (id) => {
@@ -76,17 +80,28 @@ export default function Sidebar({ mobileOpen = false, setMobileOpen = () => {} }
           </button>
         </div>
 
-        {/* Action Button: New Project */}
-        <div className="p-4">
+        {/* Action Buttons: Generate with AI & New Project */}
+        <div className="p-4 space-y-2">
+          <button
+            onClick={() => {
+              onOpenAiModal();
+              if (mobileOpen) setMobileOpen(false);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 hover:from-purple-500 hover:via-indigo-500 hover:to-cyan-400 text-white font-semibold text-xs shadow-glow transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] min-h-[44px]"
+          >
+            <Sparkles className="w-4 h-4 animate-pulse" />
+            <span>AI Motion Generator</span>
+          </button>
+
           <button
             onClick={() => {
               openNewProjectModal();
               if (mobileOpen) setMobileOpen(false);
             }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-medium text-sm shadow-glow transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-border text-zinc-200 border border-surface-border font-medium text-xs transition-all duration-200 min-h-[40px]"
           >
-            <Plus className="w-4 h-4" />
-            <span>New Project</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>New Blank Project</span>
           </button>
         </div>
 

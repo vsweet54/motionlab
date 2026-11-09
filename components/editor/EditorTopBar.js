@@ -48,6 +48,7 @@ export default function EditorTopBar({
   onOpenDiagnostics,
   onOpenShortcuts,
   onOpenGraphEditor,
+  onOpenAiModal,
 }) {
   const {
     project,
@@ -255,6 +256,16 @@ export default function EditorTopBar({
       <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Presets & Effects Modals Trigger */}
         <div className="flex items-center gap-1">
+          {onOpenAiModal && (
+            <button
+              onClick={onOpenAiModal}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-600/20 via-indigo-600/20 to-cyan-500/20 hover:from-purple-600/30 hover:to-cyan-500/30 border border-purple-500/40 text-purple-200 transition-all min-h-[38px] shadow-glow"
+              title="Generate new scenes with Gemini AI"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+              <span className="hidden xl:inline">AI Studio</span>
+            </button>
+          )}
           {onOpenPresets && (
             <button
               onClick={onOpenPresets}
