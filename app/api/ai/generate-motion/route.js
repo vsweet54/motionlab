@@ -5,9 +5,10 @@ import {
 } from "@/engine/ai/promptEngine";
 import { validateMotionResponse } from "@/engine/ai/schema";
 import {
-  getGeminiApiKeys,
   getPrioritizedKeyPool,
+  getModelCandidateList,
   isRetryableApiKeyError,
+  cleanErrorMessage,
 } from "@/engine/ai/keyManager";
 
 // Ensure Node.js runtime for secret preservation and API calling
@@ -17,7 +18,10 @@ export const dynamic = "force-dynamic";
 /**
  * Handles POST requests to generate structured motion graphics compositions
  * using Google Gemini via the official @google/genai SDK.
- * Supports multi-key rotation and automatic failover.
+ * Supports:
+ * - Multi-key pool with round-robin rotation
+ * - Model cascade fallback when high demand (503) or rate limit (429) occurs
+ * - Clean user-facing error messaging
  */
 export async function POST(req) {
   try {
@@ -71,7 +75,8 @@ export async function POST(req) {
       );
     }
 
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const preferredModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const modelCandidates = getModelCandidateList(preferredModel);
 
     // 3. Construct Prompt Text
     let userPromptText = "";
@@ -96,60 +101,67 @@ Return a full JSON object where "scenes" contains ONLY this regenerated scene wi
       });
     }
 
-    // 4. Multi-Key Failover Loop
+    // 4. Multi-Key & Model Cascade Fallback Execution
     let response = null;
     let successfulKeyInfo = null;
+    let successfulModel = null;
     let lastError = null;
 
-    for (const keyItem of keyPool) {
-      try {
-        const ai = new GoogleGenAI({ apiKey: keyItem.key });
-        response = await ai.models.generateContent({
-          model: modelName,
-          contents: userPromptText,
-          config: {
-            systemInstruction: MOTIONLAB_SYSTEM_INSTRUCTION,
-            responseMimeType: "application/json",
-            temperature: 0.7,
-          },
-        });
+    // Outer loop: Try models (e.g. 2.5-flash -> 2.0-flash -> 1.5-flash) if model 503 overloaded
+    outerModelLoop: for (const modelToTry of modelCandidates) {
+      // Inner loop: Try each API key in the pool
+      for (const keyItem of keyPool) {
+        try {
+          const ai = new GoogleGenAI({ apiKey: keyItem.key });
+          response = await ai.models.generateContent({
+            model: modelToTry,
+            contents: userPromptText,
+            config: {
+              systemInstruction: MOTIONLAB_SYSTEM_INSTRUCTION,
+              responseMimeType: "application/json",
+              temperature: 0.7,
+            },
+          });
 
-        successfulKeyInfo = keyItem;
-        break; // Successfully received response
-      } catch (err) {
-        lastError = err;
-        console.warn(
-          `[Gemini Multi-Key] Key #${keyItem.index}/${keyItem.total} failed:`,
-          err.message
-        );
+          if (response && response.text) {
+            successfulKeyInfo = keyItem;
+            successfulModel = modelToTry;
+            break outerModelLoop; // Success! Break out completely
+          }
+        } catch (err) {
+          lastError = err;
+          console.warn(
+            `[Gemini Execution] Model "${modelToTry}" with Key #${keyItem.index}/${keyItem.total} failed:`,
+            err.message
+          );
 
-        // If retryable error and more keys exist in pool, proceed to next key
-        if (isRetryableApiKeyError(err) && keyPool.length > 1) {
-          continue;
+          // If retryable (503 overloaded, 429 quota, 401/403 auth), try next key or fallback model
+          if (isRetryableApiKeyError(err)) {
+            continue;
+          }
+
+          // If non-retryable (e.g. prompt syntax violation), break early
+          break outerModelLoop;
         }
-
-        // For non-retryable errors (e.g. invalid parameter), break immediately
-        break;
       }
     }
 
     if (!response || !response.text) {
-      const errMsg = lastError?.message || "All Gemini API keys in pool failed or returned empty.";
-      const isQuota = errMsg.toLowerCase().includes("quota") || errMsg.includes("429");
-      const isAuth = errMsg.toLowerCase().includes("api key") || errMsg.includes("403") || errMsg.includes("401");
+      const rawErrMsg = lastError?.message || "All Gemini API keys and models in pool failed or returned empty.";
+      const cleanMsg = cleanErrorMessage(rawErrMsg);
+      const isOverloaded = rawErrMsg.includes("503") || rawErrMsg.toLowerCase().includes("high demand");
+      const isQuota = rawErrMsg.toLowerCase().includes("quota") || rawErrMsg.includes("429");
+      const isAuth = rawErrMsg.toLowerCase().includes("api key") || rawErrMsg.includes("403") || rawErrMsg.includes("401");
 
       return Response.json(
         {
           success: false,
-          error: isQuota
-            ? "Gemini API rate limit or quota exceeded across all configured keys. Please try again shortly."
-            : isAuth
-            ? "Invalid or unauthorized GEMINI_API_KEY in pool. Please verify your keys."
-            : errMsg,
-          code: isQuota ? "RATE_LIMITED" : isAuth ? "AUTH_FAILED" : "SERVER_ERROR",
+          error: cleanMsg,
+          code: isOverloaded ? "MODEL_HIGH_DEMAND" : isQuota ? "RATE_LIMITED" : isAuth ? "AUTH_FAILED" : "SERVER_ERROR",
           keyPoolCount: keyPool.length,
+          modelsAttempted: modelCandidates,
         },
-        { status: isQuota ? 429 : isAuth ? 401 : 500 }
+        { status: isOverloaded ? 503 : isQuota ? 429 : isAuth ? 401 : 500 }
       );
     }
 
@@ -183,7 +195,7 @@ Return a full JSON object where "scenes" contains ONLY this regenerated scene wi
       storyboard: sanitizedData,
       warnings,
       meta: {
-        model: modelName,
+        model: successfulModel,
         aspectRatio,
         fps,
         action,
@@ -196,7 +208,7 @@ Return a full JSON object where "scenes" contains ONLY this regenerated scene wi
     return Response.json(
       {
         success: false,
-        error: error.message || "An unexpected error occurred while communicating with Gemini API.",
+        error: cleanErrorMessage(error.message),
         code: "SERVER_ERROR",
       },
       { status: 500 }

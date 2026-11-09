@@ -241,19 +241,28 @@ export default function PromptToMotionModal({ isOpen, onClose }) {
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 <h4 className="text-sm font-bold">Gagal Menghasilkan Motion</h4>
               </div>
-              <p className="text-xs text-zinc-300 leading-relaxed">{errorMessage}</p>
+              <p className="text-xs text-zinc-300 leading-relaxed font-sans">{errorMessage}</p>
               {errorHelp && (
                 <div className="text-[11px] text-zinc-400 bg-surface-100 p-3 rounded-xl border border-surface-border">
                   <span className="font-semibold text-purple-400">Panduan: </span>
                   {errorHelp}
                 </div>
               )}
-              <div className="pt-2 flex gap-3">
+              <div className="pt-2 flex flex-wrap gap-3">
                 <button
-                  onClick={() => setStatus("idle")}
-                  className="px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-border text-xs font-semibold text-white min-h-[44px] transition-colors"
+                  type="button"
+                  onClick={handleGenerate}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white min-h-[44px] shadow-glow transition-all active:scale-95"
                 >
-                  Ubah Parameter / Coba Lagi
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Coba Lagi Sekarang</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatus("idle")}
+                  className="px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-border text-xs font-semibold text-zinc-300 min-h-[44px] transition-colors"
+                >
+                  Ubah Parameter / Prompt
                 </button>
               </div>
             </div>
